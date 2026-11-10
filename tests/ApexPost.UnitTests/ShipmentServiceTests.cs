@@ -338,7 +338,7 @@ public class ShipmentServiceTests
             await _service.CreateShipmentAsync(
                 $"APX-1234567{i}", 5.5m, "John Doe", "+61234567890", "123 Main St", "Sydney", null);
         }
-
+        
         // Act
         var (items, total) = await _service.GetShipmentsAsync(1, 10, null, null);
 

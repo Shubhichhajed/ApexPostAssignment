@@ -5,7 +5,7 @@ namespace ApexPost.Courier.Offline;
 /// </summary>
 public interface IScanRepository
 {
-    /// <summary>
+    /// <summary>  
     /// Creates and stores a new scan.
     /// </summary>
     Task<ShipmentScan> CreateAsync(ShipmentScan scan);
