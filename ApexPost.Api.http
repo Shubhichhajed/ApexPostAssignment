@@ -1,0 +1,564 @@
+@baseUrl = https://localhost:7001
+@v1Url = https://localhost:7001/api/v1
+@v2Url = https://localhost:7001/api/v2
+
+### Authentication
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJBRE1JTi0wMDEiLCJpc3MiOiJodHRwczovL2FwZXhwb3N0LmF1dGgubG9jYWwiLCJhdWQiOiJhcGV4cG9zdC1hcGkiLCJleHAiOjk5OTk5OTk5OTksImlhdCI6MTcwMDAwMDAwMCwiY291cmllcklkIjoiQURNSU4tMDAxIiwicm9sZSI6IkFkbWluIn0.fake_token
+@courierToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJDT1VSSUVSLT0wMDEiLCJpc3MiOiJodHRwczovL2FwZXhwb3N0LmF1dGgubG9jYWwiLCJhdWQiOiJhcGV4cG9zdC1hcGkiLCJleHAiOjk5OTk5OTk5OTksImlhdCI6MTcwMDAwMDAwMCwiY291cmllcklkIjoiQ09VUklFUi0wMDEiLCJyb2xlIjoiQ291cmllciJ9.fake_token
+@invalidToken = invalid.token.here
+@partnerApiKey = sk_live_partner_acme_12345
+
+###############################################################################
+# PART B & C - RESTful API - v1 (Deprecated)
+###############################################################################
+
+### GET /api/v1/shipments - List all shipments (paginated, filtered)
+GET {{v1Url}}/shipments?page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### GET /api/v1/shipments - List with filters
+GET {{v1Url}}/shipments?page=1&pageSize=10&status=InTransit&city=Sydney
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### GET /api/v1/shipments - Missing Authorization (401 Unauthorized)
+GET {{v1Url}}/shipments?page=1&pageSize=20
+Accept: application/json
+
+### GET /api/v1/shipments - Invalid Token (401 Unauthorized)
+GET {{v1Url}}/shipments?page=1&pageSize=20
+Authorization: Bearer {{invalidToken}}
+Accept: application/json
+
+### GET /api/v1/shipments - Courier role (200 OK - allowed for read)
+GET {{v1Url}}/shipments?page=1&pageSize=20
+Authorization: Bearer {{courierToken}}
+Accept: application/json
+
+### GET /api/v1/shipments/{trackingNumber} - Get single shipment
+GET {{v1Url}}/shipments/APX-12345678
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### GET /api/v1/shipments/{trackingNumber} - Not found (404)
+GET {{v1Url}}/shipments/APX-99999999
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### POST /api/v1/shipments - Create new shipment (Admin only)
+POST {{v1Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-11111111",
+  "weight": 5.5,
+  "recipientName": "John Doe",
+  "recipientPhone": "+61234567890",
+  "recipientAddress": "123 Main Street",
+  "recipientCity": "Sydney",
+  "notes": "Handle with care"
+}
+
+### POST /api/v1/shipments - Create with duplicate tracking (409 Conflict)
+POST {{v1Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-11111111",
+  "weight": 5.5,
+  "recipientName": "Jane Doe",
+  "recipientPhone": "+61234567890",
+  "recipientAddress": "456 Oak Street",
+  "recipientCity": "Melbourne",
+  "notes": "Duplicate"
+}
+
+### POST /api/v1/shipments - Courier role (403 Forbidden)
+POST {{v1Url}}/shipments
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-22222222",
+  "weight": 3.0,
+  "recipientName": "Bob Smith",
+  "recipientPhone": "+61299999999",
+  "recipientAddress": "789 Pine Street",
+  "recipientCity": "Brisbane",
+  "notes": "Forbidden for courier"
+}
+
+### POST /api/v1/shipments - Invalid tracking number format (400 Bad Request)
+POST {{v1Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "INVALID-FORMAT",
+  "weight": 5.5,
+  "recipientName": "John Doe",
+  "recipientPhone": "+61234567890",
+  "recipientAddress": "123 Main Street",
+  "recipientCity": "Sydney",
+  "notes": "Invalid tracking number"
+}
+
+### POST /api/v1/shipments - Weight out of range (400 Bad Request)
+POST {{v1Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-33333333",
+  "weight": 100.0,
+  "recipientName": "John Doe",
+  "recipientPhone": "+61234567890",
+  "recipientAddress": "123 Main Street",
+  "recipientCity": "Sydney",
+  "notes": "Weight too heavy"
+}
+
+### POST /api/v1/shipments - Missing required field (400 Bad Request)
+POST {{v1Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-44444444",
+  "weight": 5.5,
+  "recipientName": "John Doe",
+  "recipientPhone": "+61234567890"
+}
+
+### PUT /api/v1/shipments/{trackingNumber} - Update shipment (Admin only)
+PUT {{v1Url}}/shipments/APX-11111111
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "weight": 6.5,
+  "recipientName": "John Doe Updated",
+  "recipientPhone": "+61234567890",
+  "recipientAddress": "123 Main Street Updated",
+  "recipientCity": "Sydney",
+  "notes": "Updated notes"
+}
+
+### PUT /api/v1/shipments/{trackingNumber} - Not found (404)
+PUT {{v1Url}}/shipments/APX-99999999
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "weight": 6.5,
+  "recipientName": "John Doe Updated",
+  "recipientPhone": "+61234567890",
+  "recipientAddress": "123 Main Street Updated",
+  "recipientCity": "Sydney",
+  "notes": "Updated notes"
+}
+
+### PATCH /api/v1/shipments/{trackingNumber}/status - Update status (Courier role)
+PATCH {{v1Url}}/shipments/APX-11111111/status
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "status": "PickedUp"
+}
+
+### PATCH /api/v1/shipments/{trackingNumber}/status - Admin role (403 Forbidden)
+PATCH {{v1Url}}/shipments/APX-11111111/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "InTransit"
+}
+
+### PATCH /api/v1/shipments/{trackingNumber}/status - Invalid transition (409 Conflict)
+PATCH {{v1Url}}/shipments/APX-11111111/status
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "status": "Created"
+}
+
+### DELETE /api/v1/shipments/{trackingNumber} - Delete shipment (Admin only)
+DELETE {{v1Url}}/shipments/APX-55555555
+Authorization: Bearer {{adminToken}}
+
+### DELETE /api/v1/shipments/{trackingNumber} - Delete non-Created shipment (409 Conflict)
+DELETE {{v1Url}}/shipments/APX-11111111
+Authorization: Bearer {{adminToken}}
+
+### POST /api/v1/shipments/{trackingNumber}/scans - Upload scans (Courier only)
+POST {{v1Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::550e8400-e29b-41d4-a716-446655440001",
+      "scanType": "Pickup",
+      "courierId": "COURIER-001",
+      "location": "Sydney Central",
+      "scannedAtUtc": "2024-01-15T10:30:00Z",
+      "notes": "Pickup successful"
+    },
+    {
+      "scanId": "scan::550e8400-e29b-41d4-a716-446655440002",
+      "scanType": "InTransit",
+      "courierId": "COURIER-001",
+      "location": "Sydney CBD",
+      "scannedAtUtc": "2024-01-15T11:45:00Z",
+      "notes": "In transit"
+    }
+  ]
+}
+
+### POST /api/v1/shipments/{trackingNumber}/scans - Upload same scans again (idempotent, duplicates)
+POST {{v1Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::550e8400-e29b-41d4-a716-446655440001",
+      "scanType": "Pickup",
+      "courierId": "COURIER-001",
+      "location": "Sydney Central",
+      "scannedAtUtc": "2024-01-15T10:30:00Z",
+      "notes": "Pickup successful"
+    }
+  ]
+}
+
+### POST /api/v1/shipments/{trackingNumber}/scans - Scan in future (400 Bad Request - custom validation)
+POST {{v1Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::550e8400-e29b-41d4-a716-446655440003",
+      "scanType": "Pickup",
+      "courierId": "COURIER-001",
+      "location": "Sydney Central",
+      "scannedAtUtc": "2099-12-31T23:59:59Z",
+      "notes": "Future scan - invalid"
+    }
+  ]
+}
+
+### POST /api/v1/shipments/{trackingNumber}/scans - Delivered without signature (400 Bad Request - custom validation)
+POST {{v1Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::550e8400-e29b-41d4-a716-446655440004",
+      "scanType": "Delivered",
+      "courierId": "COURIER-001",
+      "location": "Sydney Central",
+      "scannedAtUtc": "2024-01-15T14:00:00Z",
+      "notes": null
+    }
+  ]
+}
+
+### GET /api/v1/shipments/{trackingNumber}/scans - Get scan history
+GET {{v1Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+###############################################################################
+# PART B & C - RESTful API - v2 (Current)
+###############################################################################
+
+### GET /api/v2/shipments - List all shipments v2
+GET {{v2Url}}/shipments?page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### GET /api/v2/shipments/{trackingNumber} - Get single shipment v2 (with latestScan and nested recipient)
+GET {{v2Url}}/shipments/APX-11111111
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### POST /api/v2/shipments - Create new shipment v2
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-66666666",
+  "weight": 4.2,
+  "recipientName": "Sarah Johnson",
+  "recipientPhone": "+61287654321",
+  "recipientAddress": "999 High Street",
+  "recipientCity": "Melbourne",
+  "notes": "v2 API creation"
+}
+
+### POST /api/v2/shipments - 201 Created response with Location header
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-77777777",
+  "weight": 2.8,
+  "recipientName": "Michael Brown",
+  "recipientPhone": "+61299887766",
+  "recipientAddress": "321 Victoria Avenue",
+  "recipientCity": "Brisbane",
+  "notes": "Testing location header"
+}
+
+### PUT /api/v2/shipments/{trackingNumber} - Update shipment v2
+PUT {{v2Url}}/shipments/APX-66666666
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "weight": 4.5,
+  "recipientName": "Sarah Johnson Updated",
+  "recipientPhone": "+61287654321",
+  "recipientAddress": "999 High Street Updated",
+  "recipientCity": "Melbourne",
+  "notes": "v2 update"
+}
+
+### PATCH /api/v2/shipments/{trackingNumber}/status - Update status v2
+PATCH {{v2Url}}/shipments/APX-66666666/status
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "status": "PickedUp"
+}
+
+### DELETE /api/v2/shipments/{trackingNumber} - Delete shipment v2
+DELETE {{v2Url}}/shipments/APX-77777777
+Authorization: Bearer {{adminToken}}
+
+### POST /api/v2/shipments/{trackingNumber}/scans - Upload scans v2
+POST {{v2Url}}/shipments/APX-66666666/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::660e8400-e29b-41d4-a716-446655440001",
+      "scanType": "PickedUp",
+      "courierId": "COURIER-001",
+      "location": "Melbourne CBD",
+      "scannedAtUtc": "2024-01-15T09:00:00Z",
+      "notes": "v2 pickup"
+    }
+  ]
+}
+
+### GET /api/v2/shipments/{trackingNumber}/scans - Get scan history v2
+GET {{v2Url}}/shipments/APX-66666666/scans
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+###############################################################################
+# PART D - API Security
+###############################################################################
+
+### GET /api/v2/shipments - Missing authentication (401 Unauthorized)
+GET {{v2Url}}/shipments?page=1&pageSize=20
+Accept: application/json
+
+### GET /api/v2/shipments - Expired/Invalid token (401 Unauthorized)
+GET {{v2Url}}/shipments?page=1&pageSize=20
+Authorization: Bearer {{invalidToken}}
+Accept: application/json
+
+### POST /api/v2/shipments - Courier attempting Admin operation (403 Forbidden)
+POST {{v2Url}}/shipments
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-88888888",
+  "weight": 3.5,
+  "recipientName": "Test User",
+  "recipientPhone": "+61299999999",
+  "recipientAddress": "Test Address",
+  "recipientCity": "Test City",
+  "notes": "Courier cannot create"
+}
+
+### PATCH /api/v2/shipments/{trackingNumber}/status - Admin attempting Courier operation (403 Forbidden)
+PATCH {{v2Url}}/shipments/APX-11111111/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "PickedUp"
+}
+
+### POST /api/v2/shipments/{trackingNumber}/scans - Courier uploading with different courierId (403 Forbidden)
+POST {{v2Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::770e8400-e29b-41d4-a716-446655440001",
+      "scanType": "Pickup",
+      "courierId": "COURIER-999",
+      "location": "Sydney",
+      "scannedAtUtc": "2024-01-15T10:30:00Z",
+      "notes": "Wrong courier ID"
+    }
+  ]
+}
+
+### GET /api/v2/partner/shipments/{trackingNumber} - Partner API key - Valid
+GET {{v2Url}}/partner/shipments/APX-11111111
+X-Api-Key: {{partnerApiKey}}
+Accept: application/json
+
+### GET /api/v2/partner/shipments/{trackingNumber} - Partner API key - Missing (401 Unauthorized)
+GET {{v2Url}}/partner/shipments/APX-11111111
+Accept: application/json
+
+### GET /api/v2/partner/shipments/{trackingNumber} - Partner API key - Invalid (401 Unauthorized)
+GET {{v2Url}}/partner/shipments/APX-11111111
+X-Api-Key: sk_invalid_key
+Accept: application/json
+
+###############################################################################
+# PART D - Validation Error Responses (400 Bad Request with ValidationProblemDetails)
+###############################################################################
+
+### POST /api/v2/shipments - Multiple validation errors (400 Bad Request)
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "WRONG",
+  "weight": 100.0,
+  "recipientPhone": "invalid-phone",
+  "recipientCity": ""
+}
+
+### POST /api/v2/shipments/{trackingNumber}/scans - Scan time in future (400 Bad Request - custom validation)
+POST {{v2Url}}/shipments/APX-11111111/scans
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "scans": [
+    {
+      "scanId": "scan::880e8400-e29b-41d4-a716-446655440001",
+      "scanType": "Pickup",
+      "courierId": "COURIER-001",
+      "location": "Sydney",
+      "scannedAtUtc": "2030-12-31T23:59:59Z",
+      "notes": "Future scan"
+    }
+  ]
+}
+
+###############################################################################
+# PART D - Status Code and Error Response Demonstrations
+###############################################################################
+
+### 200 OK - Successful GET
+GET {{v2Url}}/shipments/APX-11111111
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### 201 Created with Location header
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-99999999",
+  "weight": 5.0,
+  "recipientName": "Location Header Test",
+  "recipientPhone": "+61299999999",
+  "recipientAddress": "Test Address",
+  "recipientCity": "Test City",
+  "notes": "Testing 201 and Location"
+}
+
+### 204 No Content - Successful DELETE
+DELETE {{v2Url}}/shipments/APX-99999999
+Authorization: Bearer {{adminToken}}
+
+### 400 Bad Request - ValidationProblemDetails
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "invalid",
+  "weight": 1000,
+  "recipientName": "",
+  "recipientPhone": "bad"
+}
+
+### 409 Conflict - Duplicate tracking number
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "trackingNumber": "APX-11111111",
+  "weight": 5.5,
+  "recipientName": "Duplicate",
+  "recipientPhone": "+61299999999",
+  "recipientAddress": "Duplicate Address",
+  "recipientCity": "Duplicate City"
+}
+
+### 409 Conflict - Invalid status transition
+PATCH {{v2Url}}/shipments/APX-66666666/status
+Authorization: Bearer {{courierToken}}
+Content-Type: application/json
+
+{
+  "status": "Created"
+}
+
+### 415 Unsupported Media Type
+POST {{v2Url}}/shipments
+Authorization: Bearer {{adminToken}}
+Content-Type: text/plain
+
+This is not JSON
+
+###############################################################################
+# OpenAPI/Swagger Endpoints
+###############################################################################
+
+### Get OpenAPI v1 specification
+GET {{baseUrl}}/openapi/v1.json
+Accept: application/json
+
+### Get OpenAPI v2 specification
+GET {{baseUrl}}/openapi/v2.json
+Accept: application/json
+
+### Swagger UI (interactive documentation)
+GET {{baseUrl}}/swagger
